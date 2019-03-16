@@ -4,6 +4,8 @@ from torch.nn import init
 import functools
 from torch.optim import lr_scheduler
 
+import torch.nn.functional as F
+from boxx.ylth import *
 
 ###############################################################################
 # Helper Functions
@@ -151,6 +153,53 @@ def define_G(input_nc, output_nc, ngf, netG, norm='batch', use_dropout=False, in
         raise NotImplementedError('Generator model name [%s] is not recognized' % netG)
     return init_net(net, init_type, init_gain, gpu_ids)
 
+
+
+class Stn(nn.Module):
+    def __init__(self, inc=7, size=256):
+        
+        super(Stn, self).__init__()
+        self.Convs = nn.Sequential(
+            nn.Conv2d(inc, 16, kernel_size=7, padding=3, stride=2),
+            nn.ReLU(True),
+            nn.Conv2d(16, 32, kernel_size=3, padding=1, ),
+            nn.MaxPool2d(2, stride=2),
+            nn.ReLU(True),
+            nn.Conv2d(32, 64, kernel_size=3, padding=1, ),
+            nn.MaxPool2d(2, stride=2),
+            nn.ReLU(True),
+            nn.Conv2d(64, 128, kernel_size=3, padding=1, ),
+            nn.MaxPool2d(2, stride=2),
+            nn.ReLU(True),
+            nn.Conv2d(128, 64, kernel_size=3, padding=1, ),
+            nn.MaxPool2d(2, stride=2),
+            nn.ReLU(True),
+        )
+        self.Fcs = nn.Sequential(
+                nn.Linear(8*8*64, 512),
+                nn.ReLU(True),
+                nn.Linear(512, 2*3),
+            )
+    def forward(self, A, fg):
+        png = torch.cat([A, fg], -3)
+        feats = self.Convs(png)
+        fc = feats.view(-1, 8*8*64)
+        theta = self.Fcs(fc)
+        theta = theta.view(-1, 2, 3)
+#        theta = (tht-[[[1,0,0],[0,1,0]]]).type(A.type()).to(fg.device)
+        grid = F.affine_grid(theta, fg.size())
+        transedFg = F.grid_sample(fg, grid)
+        
+        alpha = transedFg[...,-1:,:,:]
+        
+        composited = A * (1-alpha) + transedFg[...,:3,:,:]*alpha
+#        import boxx.g
+#        show([histEqualize-npa(alpha),transedFg[...,:3,:,:]], torgb)
+        return composited
+    
+def define_stn(inc=7, size=256, init_type='normal', init_gain=0.02, gpu_ids=[]):
+    net = Stn(inc=inc, size=size)
+    return init_net(net, init_type, init_gain, gpu_ids)
 
 def define_D(input_nc, ndf, netD, n_layers_D=3, norm='batch', init_type='normal', init_gain=0.02, gpu_ids=[]):
     """Create a discriminator

@@ -22,7 +22,7 @@ class BaseOptions():
         # basic parameters
         parser.add_argument('--dataroot', default="datasets/glasses_wear", help='path to images (should have subfolders trainA, trainB, valA, valB, etc)')
         parser.add_argument('--name', type=str, default='try', help='name of the experiment. It decides where to store samples and models')
-        parser.add_argument('--gpu_ids', type=str, default='0', help='gpu ids: e.g. 0  0,1,2, 0,2. use -1 for CPU')
+        parser.add_argument('--gpu_ids', type=str, default=None, help='gpu ids: e.g. 0  0,1,2, 0,2. use -1 for CPU')
         parser.add_argument('--checkpoints_dir', type=str, default='./checkpoints', help='models are saved here')
         # model parameters
         parser.add_argument('--model', type=str, default='cycle_gan', help='chooses which model to use. [cycle_gan | pix2pix | test | colorization]')
@@ -123,12 +123,15 @@ class BaseOptions():
 #        self.print_options(opt)
 
         # set gpu ids
-        str_ids = opt.gpu_ids.split(',')
-        opt.gpu_ids = []
-        for str_id in str_ids:
-            id = int(str_id)
-            if id >= 0:
-                opt.gpu_ids.append(id)
+        if opt.gpu_ids is None:
+            opt.gpu_ids = list(range(torch.cuda.device_count()))
+        else:
+            str_ids = opt.gpu_ids.split(',')
+            opt.gpu_ids = []
+            for str_id in str_ids:
+                id = int(str_id)
+                if id >= 0:
+                    opt.gpu_ids.append(id)
         if len(opt.gpu_ids) > 0:
             torch.cuda.set_device(opt.gpu_ids[0])
 

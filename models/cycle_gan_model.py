@@ -74,7 +74,9 @@ class CycleGANModel(BaseModel):
                                         not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids)
         self.netG_B = networks.define_G(opt.output_nc, opt.input_nc, opt.ngf, opt.netG, opt.norm,
                                         not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids)
-
+        
+        self.stn = networks.define_stn(7, opt.crop_size, opt.init_type, opt.init_gain, self.gpu_ids)
+        
         if self.isTrain:  # define discriminators
             self.netD_A = networks.define_D(opt.output_nc, opt.ndf, opt.netD,
                                             opt.n_layers_D, opt.norm, opt.init_type, opt.init_gain, self.gpu_ids)
@@ -95,7 +97,16 @@ class CycleGANModel(BaseModel):
             self.optimizer_D = torch.optim.Adam(itertools.chain(self.netD_A.parameters(), self.netD_B.parameters()), lr=opt.lr, betas=(opt.beta1, 0.999))
             self.optimizers.append(self.optimizer_G)
             self.optimizers.append(self.optimizer_D)
+            
+            self.optimizer_stn = torch.optim.Adam(self.stn.parameters(), lr=opt.lr, betas=(opt.beta1, 0.999))
+#            self.optimizers.append
 
+    def composition(self, input):
+        fg = input['fg'].to(self.device)
+        A = input['A'].to(self.device)
+        self.composited = self.stn(A, fg)
+        return self.composited
+        
     def set_input(self, input):
         """Unpack input data from the dataloader and perform necessary pre-processing steps.
 
@@ -106,6 +117,9 @@ class CycleGANModel(BaseModel):
         """
         AtoB = self.opt.direction == 'AtoB'
         self.real_A = input['A' if AtoB else 'B'].to(self.device)
+        
+        self.real_A = self.composition(input).detach()
+        
         self.real_B = input['B' if AtoB else 'A'].to(self.device)
         self.image_paths = input['A_paths' if AtoB else 'B_paths']
 
@@ -186,6 +200,12 @@ class CycleGANModel(BaseModel):
         self.optimizer_G.zero_grad()  # set G_A and G_B's gradients to zero
         self.backward_G()             # calculate gradients for G_A and G_B
         self.optimizer_G.step()       # update G_A and G_B's weights
+        
+        self.optimizer_stn.zero_grad()
+        self.loss_stn = self.criterionGAN(self.netD_B(self.composited), False)
+        self.loss_stn.backward()
+        self.optimizer_stn.step()
+        
         # D_A and D_B
         self.set_requires_grad([self.netD_A, self.netD_B], True)
         self.optimizer_D.zero_grad()   # set D_A and D_B's gradients to zero

@@ -26,6 +26,9 @@ from util.visualizer import Visualizer
 
 from boxx.ylth import *
 
+'''
+ylaunch --cpu=32 --memory=160000 --gpu=8 -- python train.py --dataroot datasets/glasses_wear --name glasses_wear --model cycle_gan --display_id -1 --batch_size 24 --num_threads 26 
+'''
 if __name__ == '__main__':
     opt = TrainOptions().parse()   # get training options
     dataset = create_dataset(opt)  # create a dataset given opt.dataset_mode and other options
@@ -82,6 +85,7 @@ if __name__ == '__main__':
         print('End of epoch %d / %d \t Time Taken: %d sec' % (epoch, opt.niter + opt.niter_decay, time.time() - epoch_start_time))
         model.update_learning_rate()                     # update learning rates at the end of every epoch.
         if opt.name == 'try':
+            show(model.real_A, model.composited, model.fake_B,model.real_B,torgb)
             break
     data = dataset.dataset
             
