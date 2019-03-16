@@ -3,7 +3,7 @@ import itertools
 from util.image_pool import ImagePool
 from .base_model import BaseModel
 from . import networks
-
+from boxx import timegap
 
 class CycleGANModel(BaseModel):
     """
@@ -51,6 +51,7 @@ class CycleGANModel(BaseModel):
             opt (Option class)-- stores all the experiment flags; needs to be a subclass of BaseOptions
         """
         BaseModel.__init__(self, opt)
+        self.opt = opt
         # specify the training losses you want to print out. The training/test scripts will call <BaseModel.get_current_losses>
         self.loss_names = ['D_A', 'G_A', 'cycle_A', 'idt_A', 'D_B', 'G_B', 'cycle_B', 'idt_B']
         # specify the images you want to save/display. The training/test scripts will call <BaseModel.get_current_visuals>
@@ -99,12 +100,14 @@ class CycleGANModel(BaseModel):
             self.optimizers.append(self.optimizer_D)
             
             self.optimizer_stn = torch.optim.Adam(self.stn.parameters(), lr=opt.lr, betas=(opt.beta1, 0.999))
-#            self.optimizers.append
+            self.optimizers.append(self.optimizer_stn)
 
     def composition(self, input):
         fg = input['fg'].to(self.device)
         A = input['A'].to(self.device)
-        self.composited = self.stn(A, fg)
+        theta, self.composited = self.stn(A, fg)
+        if timegap(120, 'theta'):
+            print(theta.detach().cpu().numpy().round(2))
         return self.composited
         
     def set_input(self, input):

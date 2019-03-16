@@ -154,7 +154,7 @@ def define_G(input_nc, output_nc, ngf, netG, norm='batch', use_dropout=False, in
     return init_net(net, init_type, init_gain, gpu_ids)
 
 
-
+theta_bias = (torch.Tensor([[[1,0,0],[0,1,0]]])).float()
 class Stn(nn.Module):
     def __init__(self, inc=7, size=256):
         
@@ -186,6 +186,9 @@ class Stn(nn.Module):
         fc = feats.view(-1, 8*8*64)
         theta = self.Fcs(fc)
         theta = theta.view(-1, 2, 3)
+        
+        theta += theta_bias.to(theta.device)
+        
 #        theta = (tht-[[[1,0,0],[0,1,0]]]).type(A.type()).to(fg.device)
         grid = F.affine_grid(theta, fg.size())
         transedFg = F.grid_sample(fg, grid)
@@ -195,7 +198,7 @@ class Stn(nn.Module):
         composited = A * (1-alpha) + transedFg[...,:3,:,:]*alpha
 #        import boxx.g
 #        show([histEqualize-npa(alpha),transedFg[...,:3,:,:]], torgb)
-        return composited
+        return theta, composited
     
 def define_stn(inc=7, size=256, init_type='normal', init_gain=0.02, gpu_ids=[]):
     net = Stn(inc=inc, size=size)
