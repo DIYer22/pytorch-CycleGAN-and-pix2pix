@@ -85,7 +85,8 @@ if __name__ == '__main__':
         print('End of epoch %d / %d \t Time Taken: %d sec' % (epoch, opt.niter + opt.niter_decay, time.time() - epoch_start_time))
         model.update_learning_rate()                     # update learning rates at the end of every epoch.
         if opt.name == 'try':
-            show(model.real_A, model.composited, model.fake_B,model.real_B,torgb)
+            show((npa-model.fg[0]).transpose(-2,-1,-3), model.real_A, model.fake_B,model.real_B,torgb)
+            print(getpara(model.stn).grad.abs().mean()) #=> 0.0005
             break
     data = dataset.dataset
             

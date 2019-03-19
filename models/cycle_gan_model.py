@@ -3,7 +3,8 @@ import itertools
 from util.image_pool import ImagePool
 from .base_model import BaseModel
 from . import networks
-from boxx import timegap
+from boxx.ylth import * 
+from boxx.ylth import timegap, getpara, randfloat
 
 class CycleGANModel(BaseModel):
     """
@@ -103,10 +104,11 @@ class CycleGANModel(BaseModel):
             self.optimizers.append(self.optimizer_stn)
 
     def composition(self, input):
-        fg = input['fg'].to(self.device)
+        self.fg = fg = input['fg'].to(self.device)
         A = input['A'].to(self.device)
         theta, self.composited = self.stn(A, fg)
-        if timegap(120, 'theta'):
+        self.theta = theta
+        if timegap(120, 'theta') and randfloat() < .05:
             print(theta.detach().cpu().numpy().round(2))
         return self.composited
         
@@ -206,7 +208,20 @@ class CycleGANModel(BaseModel):
         
         self.optimizer_stn.zero_grad()
         self.loss_stn = self.criterionGAN(self.netD_B(self.composited), False)
+        self.loss_theta_l2 = ((((self.theta - networks.theta_mean.to(self.theta.device))**2).sum(-1).sum(-1))).sum()
+        
+        
+        self.loss_theta_l2.backward(retain_graph=True)
+        isLog = timegap(300, 'lossNorma') and randfloat() < .2
+        
+        if isLog:
+            print("l2 grad norma:", getpara(self.stn).grad.abs().mean())
+        # all:0.0014, l2: 0.0006, stn: 0.0013
         self.loss_stn.backward()
+        
+        if isLog:
+            print("l2 + stn grad norma:", getpara(self.stn).grad.abs().mean())
+            
         self.optimizer_stn.step()
         
         # D_A and D_B
