@@ -208,14 +208,17 @@ class CycleGANModel(BaseModel):
         
         self.optimizer_stn.zero_grad()
         self.loss_stn = self.criterionGAN(self.netD_B(self.composited), False)
-        self.loss_theta_l2 = ((((self.theta - networks.theta_mean.to(self.theta.device))**2).sum(-1).sum(-1))).sum()
         
-        
-        self.loss_theta_l2.backward(retain_graph=True)
         isLog = timegap(300, 'lossNorma') and randfloat() < .2
+        if self.opt.l2:
+            self.loss_theta_l2 = ((((self.theta - networks.theta_mean.to(self.theta.device))**2).sum(-1).sum(-1))).sum()
+            
+            self.loss_theta_l2 *= self.opt.l2 
+            
+            self.loss_theta_l2.backward(retain_graph=True)
         
-        if isLog:
-            print("l2 grad norma:", getpara(self.stn).grad.abs().mean())
+            if isLog:
+                print("l2 grad norma:", getpara(self.stn).grad.abs().mean())
         # all:0.0014, l2: 0.0006, stn: 0.0013
         self.loss_stn.backward()
         
