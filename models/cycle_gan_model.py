@@ -108,8 +108,8 @@ class CycleGANModel(BaseModel):
         A = input['A'].to(self.device)
         theta, self.composited = self.stn(A, fg)
         self.theta = theta
-        if timegap(120, 'theta') and randfloat() < .05:
-            print(theta.detach().cpu().numpy().round(2))
+#        if timegap(120, 'theta') and randfloat() < .05:
+#            print(theta.detach().cpu().numpy().round(2))
         return self.composited
         
     def set_input(self, input):
@@ -218,6 +218,7 @@ class CycleGANModel(BaseModel):
             self.loss_theta_l2.backward(retain_graph=True)
         
             if isLog:
+                print(self.theta[0].detach().cpu().numpy().round(2))
                 print("l2 grad norma:", getpara(self.stn).grad.abs().mean())
         # all:0.0014, l2: 0.0006, stn: 0.0013
         self.loss_stn.backward()
