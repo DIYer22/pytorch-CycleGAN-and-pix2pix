@@ -221,6 +221,7 @@ class CycleGANModel(BaseModel):
                 print(self.theta[0].detach().cpu().numpy().round(2))
                 print("l2 grad norma:", getpara(self.stn).grad.abs().mean())
         # all:0.0014, l2: 0.0006, stn: 0.0013
+        self.loss_stn *= self.opt.stn_w
         self.loss_stn.backward()
         
         if isLog:
