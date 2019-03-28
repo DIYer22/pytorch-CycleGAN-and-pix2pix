@@ -155,7 +155,8 @@ def define_G(input_nc, output_nc, ngf, netG, norm='batch', use_dropout=False, in
 
 
 theta_mean = (torch.Tensor([[[1.8,0,0],[0,1.8,0]]])).float()
-theta_bias = (torch.Tensor([[[1,0,0],[0,1,0]]])).float()
+#theta_bias = (torch.Tensor([[[1,0,0],[0,1,0]]])).float()
+theta_bias = (torch.Tensor([[[1.8,0,0],[0,1.8,0]]])).float()
 class Stn(nn.Module):
     def __init__(self, inc=7, size=256):
         
