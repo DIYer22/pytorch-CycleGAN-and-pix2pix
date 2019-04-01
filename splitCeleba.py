@@ -11,6 +11,7 @@ from boxx import *
 
 root = os.path.expanduser('~/dataset/celeba')
 attr = 'Eyeglasses'
+datasetdir = pathjoin(root, "%s_cycle_dataset"%attr.lower())
 nSplit2test = 10
 
 
@@ -29,7 +30,6 @@ testb = datab[nSplit2test-1::nSplit2test]
 trainb = [n for n in datab if n not in testb]
 
 
-datasetdir = pathjoin(root, "%s_cycle_dataset"%attr.lower())
 
 
 for sett in ['testA', 'testB', 'trainA', 'trainB']:
