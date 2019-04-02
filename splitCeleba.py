@@ -4,6 +4,9 @@
 @author: DIYer22@github
 @mail: ylxx@live.com
 Created on Sat Mar 16 14:23:43 2019
+
+
+split celeba 2 glass(trainB) and not wear glass(trainA)
 """
 from boxx import *
 
