@@ -246,6 +246,8 @@ def define_D(input_nc, ndf, netD, n_layers_D=3, norm='batch', init_type='normal'
         net = NLayerDiscriminator(input_nc, ndf, n_layers_D, norm_layer=norm_layer)
     elif netD == 'pixel':     # classify if each pixel is real or fake
         net = PixelDiscriminator(input_nc, ndf, norm_layer=norm_layer)
+    elif netD == 'fc':
+        net = FcNLayerDiscriminator(input_nc, ndf, n_layers_D, norm_layer=norm_layer)
     else:
         raise NotImplementedError('Discriminator model name [%s] is not recognized' % net)
     return init_net(net, init_type, init_gain, gpu_ids)
@@ -631,7 +633,29 @@ class NLayerDiscriminator(nn.Module):
         """Standard forward."""
         return self.model(input)
 
-
+class FcNLayerDiscriminator(NLayerDiscriminator):
+    def __init__(self, input_nc, ndf=64, n_layers=3, norm_layer=nn.BatchNorm2d):
+        super(FcNLayerDiscriminator, self).__init__(input_nc, ndf, n_layers, norm_layer)
+        self.patchD = self.model[:-1]
+        self.patchDOutc = self.model[-1].in_channels
+        self.lastConv = nn.Conv2d(self.patchDOutc, self.patchDOutc, kernel_size=(4, 4), stride=(1, 1), padding=(1, 1))
+        from boxx import cf
+        self.size = size = cf.opt.crop_size 
+        self.gap = nn.AvgPool2d(size//8-2, stride=1, padding=0)
+        self.fc1 = nn.Linear(self.patchDOutc, self.patchDOutc//2)
+        self.fc2 = nn.Linear(self.patchDOutc//2, 1)
+        self.act = nn.LeakyReLU(0.2, True)
+        self.model = None
+    def forward(self, input):
+        feats = self.patchD(input)
+        feats = self.lastConv(feats)
+        feats = self.gap(feats)
+        feats = feats.view(input.size(0),-1)
+#        import boxx.g
+        feats = self.fc1(feats)
+        feats = self.act(feats)
+        output = self.fc2(feats)
+        return output
 class PixelDiscriminator(nn.Module):
     """Defines a 1x1 PatchGAN discriminator (pixelGAN)"""
 
