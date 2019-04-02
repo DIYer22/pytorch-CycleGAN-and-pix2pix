@@ -85,8 +85,12 @@ if __name__ == '__main__':
         print('End of epoch %d / %d \t Time Taken: %d sec' % (epoch, opt.niter + opt.niter_decay, time.time() - epoch_start_time))
         model.update_learning_rate()                     # update learning rates at the end of every epoch.
         if opt.name == 'try':
-            show((npa-model.fg[0]).transpose(-2,-1,-3), model.real_A, model.fake_B,model.real_B,torgb)
-            print(getpara(model.stn).grad.abs().mean()) #=> 0.0005
+            if opt.model == 'cycle_gan':
+                show((npa-model.fg[0]).transpose(-2,-1,-3), model.real_A, model.fake_B,model.real_B,torgb)
+            elif opt.model == 'st_gan':
+                show((npa-model.fg[0]).transpose(-2,-1,-3), model.fake_raw, model.fake,model.real,torgb)
+            print(getpara(model.netStn).grad.abs().mean()) #=> 0.0005
+            self = model
             break
     data = dataset.dataset
             
