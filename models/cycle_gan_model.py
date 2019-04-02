@@ -65,9 +65,9 @@ class CycleGANModel(BaseModel):
         self.visual_names = visual_names_A + visual_names_B  # combine visualizations for A and B
         # specify the models you want to save to the disk. The training/test scripts will call <BaseModel.save_networks> and <BaseModel.load_networks>.
         if self.isTrain:
-            self.model_names = ['G_A', 'G_B', 'D_A', 'D_B']
+            self.model_names = ['G_A', 'G_B', 'D_A', 'D_B', 'Stn']
         else:  # during test time, only load Gs
-            self.model_names = ['G_A', 'G_B']
+            self.model_names = ['G_A', 'G_B', 'Stn']
 
         # define networks (both Generators and discriminators)
         # The naming is different from those used in the paper.
@@ -77,7 +77,7 @@ class CycleGANModel(BaseModel):
         self.netG_B = networks.define_G(opt.output_nc, opt.input_nc, opt.ngf, opt.netG, opt.norm,
                                         not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids)
         
-        self.stn = networks.define_stn(7, opt.crop_size, opt.init_type, opt.init_gain, self.gpu_ids)
+        self.netStn = networks.define_stn(7, opt.crop_size, opt.init_type, opt.init_gain, self.gpu_ids)
         
         if self.isTrain:  # define discriminators
             self.netD_A = networks.define_D(opt.output_nc, opt.ndf, opt.netD,
@@ -100,13 +100,13 @@ class CycleGANModel(BaseModel):
             self.optimizers.append(self.optimizer_G)
             self.optimizers.append(self.optimizer_D)
             
-            self.optimizer_stn = torch.optim.Adam(self.stn.parameters(), lr=opt.lr, betas=(opt.beta1, 0.999))
+            self.optimizer_stn = torch.optim.Adam(self.netStn.parameters(), lr=opt.lr, betas=(opt.beta1, 0.999))
             self.optimizers.append(self.optimizer_stn)
 
     def composition(self, input):
         self.fg = fg = input['fg'].to(self.device)
         A = input['A'].to(self.device)
-        theta, self.composited = self.stn(A, fg)
+        theta, self.composited = self.netStn(A, fg)
         self.theta = theta
 #        if timegap(120, 'theta') and randfloat() < .05:
 #            print(theta.detach().cpu().numpy().round(2))
@@ -219,13 +219,13 @@ class CycleGANModel(BaseModel):
         
             if isLog:
                 print(self.theta[0].detach().cpu().numpy().round(2))
-                print("l2 grad norma:", getpara(self.stn).grad.abs().mean())
+                print("l2 grad norma:", getpara(self.netStn).grad.abs().mean())
         # all:0.0014, l2: 0.0006, stn: 0.0013
         self.loss_stn *= self.opt.stn_w
         self.loss_stn.backward()
         
         if isLog:
-            print("l2 + stn grad norma:", getpara(self.stn).grad.abs().mean())
+            print("l2 + stn grad norma:", getpara(self.netStn).grad.abs().mean())
             
         self.optimizer_stn.step()
         
