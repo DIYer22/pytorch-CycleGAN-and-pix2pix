@@ -155,11 +155,12 @@ def define_G(input_nc, output_nc, ngf, netG, norm='batch', use_dropout=False, in
 
 
 theta_mean = (torch.Tensor([[[1.8,0,0],[0,1.8,0]]])).float()
-#theta_bias = (torch.Tensor([[[1,0,0],[0,1,0]]])).float()
-theta_bias = (torch.Tensor([[[1.8,0,0],[0,1.8,0]]])).float()
+theta_bias = (torch.Tensor([[[1,0,0],[0,1,0]]])).float()
+#theta_bias = (torch.Tensor([[[1.8,0,0],[0,1.8,0]]])).float()
 class Stn(nn.Module):
     def __init__(self, inc=7, size=256):
-        
+        self.size = size
+        self.conv_size = (size//32)
         super(Stn, self).__init__()
         self.Convs = nn.Sequential(
             nn.Conv2d(inc, 16, kernel_size=7, padding=3, stride=2),
@@ -178,14 +179,14 @@ class Stn(nn.Module):
             nn.ReLU(True),
         )
         self.Fcs = nn.Sequential(
-                nn.Linear(8*8*64, 512),
+                nn.Linear((self.conv_size**2)*64, 512),
                 nn.ReLU(True),
                 nn.Linear(512, 2*3),
             )
     def forward(self, A, fg):
         png = torch.cat([A, fg], -3)
         feats = self.Convs(png)
-        fc = feats.view(-1, 8*8*64)
+        fc = feats.view(-1, (self.conv_size**2)*64)
         theta = self.Fcs(fc)
         theta = theta.view(-1, 2, 3)
         
