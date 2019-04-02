@@ -4,7 +4,7 @@ from util.image_pool import ImagePool
 from .base_model import BaseModel
 from . import networks
 from boxx.ylth import * 
-from boxx.ylth import timegap, getpara, randfloat
+from boxx.ylth import timegap, getpara, randfloat, pred
 
 class StGANModel(BaseModel):
     """
@@ -158,7 +158,7 @@ class StGANModel(BaseModel):
         self.optimizer_stn.zero_grad()
         self.loss_stn = self.criterionGAN(self.netD(self.composited), True)
         
-        isLog = timegap(300, 'lossNorma') and randfloat() < .2
+        isLog = timegap(30, 'lossNorma') and randfloat() < .3
         if self.opt.l2:
             self.loss_theta_l2 = ((((self.theta - networks.theta_mean.to(self.theta.device))**2).sum(-1).sum(-1))).sum()
             
@@ -167,6 +167,7 @@ class StGANModel(BaseModel):
             self.loss_theta_l2.backward(retain_graph=True)
         
             if isLog:
+                pred-(self.opt.name)
                 print(self.theta[0].detach().cpu().numpy().round(2))
                 print("l2 grad norma:", getpara(self.netStn).grad.abs().mean())
         # all:0.0014, l2: 0.0006, stn: 0.0013
