@@ -6,6 +6,8 @@ from torch.optim import lr_scheduler
 
 import torch.nn.functional as F
 from boxx.ylth import *
+from boxx.ylth import cf
+
 
 ###############################################################################
 # Helper Functions
@@ -188,7 +190,7 @@ class Stn(nn.Module):
         feats = self.Convs(png)
         fc = feats.view(-1, (self.conv_size**2)*64)
         theta = self.Fcs(fc)
-        theta = theta.view(-1, 2, 3)
+        theta = theta.view(-1, 2, 3)*cf.opt.theta_w
         
         theta += theta_bias.to(theta.device)
         
@@ -638,24 +640,25 @@ class FcNLayerDiscriminator(NLayerDiscriminator):
         super(FcNLayerDiscriminator, self).__init__(input_nc, ndf, n_layers, norm_layer)
         self.patchD = self.model[:-1]
         self.patchDOutc = self.model[-1].in_channels
-        self.lastConv = nn.Conv2d(self.patchDOutc, self.patchDOutc, kernel_size=(4, 4), stride=(1, 1), padding=(1, 1))
+        self.lastConv = nn.Conv2d(self.patchDOutc, 32, kernel_size=(4, 4), stride=(2, 2), padding=(1, 1))
         from boxx import cf
         self.size = size = cf.opt.crop_size 
-        self.gap = nn.AvgPool2d(size//8-2, stride=1, padding=0)
-        self.fc1 = nn.Linear(self.patchDOutc, self.patchDOutc//2)
-        self.fc2 = nn.Linear(self.patchDOutc//2, 1)
+#        self.gap = nn.AvgPool2d(size//8-2, stride=1, padding=0)
+        self.fc1 = nn.Linear((size//16-1)**2*32, 512)
+        self.fc2 = nn.Linear(512, 1)
         self.act = nn.LeakyReLU(0.2, True)
         self.model = None
     def forward(self, input):
         feats = self.patchD(input)
         feats = self.lastConv(feats)
-        feats = self.gap(feats)
+#        feats = self.gap(feats)
         feats = feats.view(input.size(0),-1)
 #        import boxx.g
         feats = self.fc1(feats)
         feats = self.act(feats)
         output = self.fc2(feats)
         return output
+
 class PixelDiscriminator(nn.Module):
     """Defines a 1x1 PatchGAN discriminator (pixelGAN)"""
 

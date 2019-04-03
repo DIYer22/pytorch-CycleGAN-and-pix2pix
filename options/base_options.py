@@ -20,6 +20,9 @@ class BaseOptions():
     def initialize(self, parser):
         """Define the common options that are used in both training and test."""
         # basic parameters
+        parser.add_argument('--theta_w', type=float, default=1, help='scaling factor stn theta')
+        
+        
         parser.add_argument('--dataroot', default="datasets/glasses_wear", help='path to images (should have subfolders trainA, trainB, valA, valB, etc)')
         parser.add_argument('--name', type=str, default='try', help='name of the experiment. It decides where to store samples and models')
         parser.add_argument('--gpu_ids', type=str, default=None, help='gpu ids: e.g. 0  0,1,2, 0,2. use -1 for CPU')
