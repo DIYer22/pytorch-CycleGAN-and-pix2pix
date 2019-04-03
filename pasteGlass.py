@@ -89,7 +89,7 @@ for ind, imgn in enumerate(keys):
     imgGlassed[glassMask] = newGlass[...,:3][glassMask]
     def disturbance(img):
     #    dst = disturbanceImg(img,20,0.1,0)
-        dst = disturbanceImg(img,15,0,0)
+        dst = disturbanceImg(img,15,0,0.1)
         
         n=10
         dx, dy = cols//n,  rows//n
