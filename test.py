@@ -32,10 +32,11 @@ from data import create_dataset
 from models import create_model
 from util.visualizer import save_images
 from util import html
-
+from boxx import cf
 
 if __name__ == '__main__':
     opt = TestOptions().parse()  # get test options
+    cf.opt = opt
     # hard-code some parameters for test
     opt.num_threads = 0   # test code only supports num_threads = 1
     opt.batch_size = 1    # test code only supports batch_size = 1
